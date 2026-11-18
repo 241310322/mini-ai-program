@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}智能问答 · 会记{% endblock %}
+
+{% block content %}
+<section class="page-head">
+  <div>
+    <h1>智能问答</h1>
+    <p class="muted">跨会议检索，例如「上周会议定了哪些事？」「谁的待办快到期了？」</p>
+  </div>
+</section>
+
+{% if not ai_available %}
+<div class="notice">
+  尚未配置 DeepSeek API Key，无法使用智能问答。请在项目根目录创建 <code>.env</code> 并填写 <code>DEEPSEEK_API_KEY</code>。
+</div>
+{% endif %}
+
+<form class="ask-form card" method="post">
+  <label for="question">你的问题</label>
+  <div class="ask-row">
+    <input id="question" name="question" type="text" maxlength="500" required
+           value="{{ question }}" placeholder="例如：智慧工地项目下次评审是什么时候？"
+           {% if not ai_available %}disabled{% endif %}>
+    <button class="btn btn-primary" type="submit" {% if not ai_available %}disabled{% endif %}>提问</button>
+  </div>
+</form>
+
+{% if error %}
+<div class="notice notice-error">{{ error }}</div>
+{% endif %}
+
+{% if answer %}
+<section class="card answer-card">
+  <div class="section-head">
+    <h2>回答</h2>
+    <span class="badge badge-ai">AI 生成</span>
+  </div>
+  <div class="answer-text">{{ answer }}</div>
+  {% if sources %}
+    <div class="sources">
+      <span class="muted">参考会议：</span>
+      {% for source in sources %}
+        <a class="source-chip" href="{{ url_for('main.meeting_detail', meeting_id=source['id']) }}">
+          {{ source['title'] }}（{{ source['meeting_date'] }}）
+        </a>
+      {% endfor %}
+    </div>
+  {% endif %}
+  <p class="muted small">AI 回答基于已录入的会议纪要，关键决策请以原始记录为准。</p>
+</section>
+{% endif %}
+
+{% if history %}
+<section class="card">
+  <div class="section-head">
+    <h2>最近提问</h2>
+    <span class="section-hint">保留最近 8 条</span>
+  </div>
+  <div class="history-list">
+    {% for item in history %}
+      <details class="history-item">
+        <summary>{{ item['question'] }}<span class="history-time">{{ item['created_at'] }}</span></summary>
+        <div class="history-answer">{{ item['answer'] }}</div>
+      </details>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+{% endblock %}
