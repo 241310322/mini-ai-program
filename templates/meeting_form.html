@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}{{ '编辑会议' if meeting else '新建会议' }} · 会记{% endblock %}
+
+{% block content %}
+<section class="page-head">
+  <div>
+    <h1>{{ '编辑会议' if meeting else '新建会议' }}</h1>
+    <p class="muted">
+      {% if meeting %}修改会议信息与记录原文；已生成的纪要不会自动变更。{% else %}先保存会议，再在详情页用 AI 提炼纪要。{% endif %}
+    </p>
+  </div>
+  <a class="btn btn-ghost" href="{{ url_for('main.meeting_detail', meeting_id=meeting['id']) if meeting else url_for('main.index') }}">返回</a>
+</section>
+
+<form class="card form-card" method="post" novalidate>
+  <div class="form-row">
+    <label for="title">会议主题 <span class="required">*</span></label>
+    <input id="title" name="title" type="text" maxlength="120" required
+           value="{{ form['title'] }}" placeholder="例如：智慧工地平台二期需求评审会">
+  </div>
+
+  <div class="form-grid">
+    <div class="form-row">
+      <label for="meeting_date">会议日期 <span class="required">*</span></label>
+      <input id="meeting_date" name="meeting_date" type="date" required
+             value="{{ form['meeting_date'] }}">
+    </div>
+    <div class="form-row">
+      <label for="location">会议地点</label>
+      <input id="location" name="location" type="text" maxlength="80"
+             value="{{ form['location'] }}" placeholder="会议室 / 线上会议">
+    </div>
+  </div>
+
+  <div class="form-row">
+    <label for="attendees">参会人员</label>
+    <input id="attendees" name="attendees" type="text" maxlength="300"
+           value="{{ form['attendees'] }}" placeholder="用逗号分隔，例如：张三、李四、王五">
+  </div>
+
+  <div class="form-row">
+    <label for="transcript">会议记录原文</label>
+    <textarea id="transcript" name="transcript" rows="14" maxlength="60000"
+              placeholder="粘贴会议速记、录音转写文本或手写记录。内容越完整，AI 提炼越准确。">{{ form['transcript'] }}</textarea>
+    <div class="field-hint">
+      <span id="char-count">0</span> / 60000 字
+      <span class="muted">· 无需整理格式，保留原始发言即可</span>
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <button class="btn btn-primary" type="submit">{{ '保存修改' if meeting else '创建会议' }}</button>
+    <a class="btn btn-ghost" href="{{ url_for('main.meeting_detail', meeting_id=meeting['id']) if meeting else url_for('main.index') }}">取消</a>
+  </div>
+</form>
+{% endblock %}
