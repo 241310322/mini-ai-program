@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}{{ meeting['title'] }} · 会记{% endblock %}
+
+{% block content %}
+<nav class="breadcrumb">
+  <a href="{{ url_for('main.index') }}">会议列表</a>
+  <span>/</span>
+  <span>{{ meeting['title'] }}</span>
+</nav>
+
+<section class="detail-head card">
+  <div class="detail-head-main">
+    <div class="detail-badges">
+      {% if meeting['status'] == 'processed' %}
+        <span class="badge badge-ai">AI 已提炼</span>
+      {% else %}
+        <span class="badge">草稿</span>
+      {% endif %}
+      <span class="muted small">更新于 {{ meeting['updated_at'] }}</span>
+    </div>
+    <h1>{{ meeting['title'] }}</h1>
+    <div class="meta-row">
+      <span>📅 {{ meeting['meeting_date'] }}</span>
+      {% if meeting['location'] %}<span>📍 {{ meeting['location'] }}</span>{% endif %}
+      {% if meeting['attendees'] %}<span>👥 {{ meeting['attendees'] }}</span>{% endif %}
+    </div>
+  </div>
+  <div class="detail-actions">
+    {% if meeting['transcript'] %}
+      <button id="extract-btn" class="btn btn-primary"
+              data-url="{{ url_for('main.extract_meeting', meeting_id=meeting['id']) }}"
+              {% if not ai_available %}disabled title="未配置 DEEPSEEK_API_KEY"{% endif %}>
+        ✦ AI 提炼纪要
+      </button>
+    {% endif %}
+    <a class="btn" href="{{ url_for('main.edit_meeting', meeting_id=meeting['id']) }}">编辑</a>
+    <a class="btn" href="{{ url_for('main.export_meeting', meeting_id=meeting['id']) }}">导出 Word</a>
+    <form method="post" action="{{ url_for('main.delete_meeting', meeting_id=meeting['id']) }}"
+          class="inline-form" data-confirm="确定删除这场会议？摘要、决议和待办都会一并删除。">
+      <button class="btn btn-danger-ghost" type="submit">删除</button>
+    </form>
+  </div>
+</section>
+
+{% if not ai_available %}
+<div class="notice">
+  尚未配置 DeepSeek API Key，AI 提炼与智能问答不可用。请参考 README 在项目根目录创建 <code>.env</code> 并填写 <code>DEEPSEEK_API_KEY</code>。
+</div>
+{% endif %}
+
+<section class="card">
+  <div class="section-head">
+    <h2>会议摘要</h2>
+    {% if ai_available %}<span class="section-hint">模型：{{ ai_model }}</span>{% endif %}
+  </div>
+  {% if meeting['summary'] %}
+    <p class="summary-text">{{ meeting['summary'] }}</p>
+  {% else %}
+    <p class="muted">尚未生成摘要。{% if meeting['transcript'] %}点击右上角「AI 提炼纪要」自动生成。{% else %}请先编辑会议并粘贴记录原文。{% endif %}</p>
+  {% endif %}
+</section>
+
+<section class="card">
+  <div class="section-head">
+    <h2>会议决议</h2>
+    <span class="section-hint">{{ decisions|length }} 条</span>
+  </div>
+  {% if decisions %}
+    <ol class="decision-list">
+      {% for decision in decisions %}
+        <li>{{ decision['content'] }}</li>
+      {% endfor %}
+    </ol>
+  {% else %}
+    <p class="muted">暂无决议。AI 提炼后，会议中明确达成的结论会汇总在这里。</p>
+  {% endif %}
+</section>
+
+<section class="card">
+  <div class="section-head">
+    <h2>待办事项</h2>
+    <span class="section-hint">{{ todos|length }} 项，勾选可标记完成</span>
+  </div>
+  {% if todos %}
+    <div class="todo-list">
+      {% for todo in todos %}
+      <div class="todo-item {{ 'todo-done' if todo['done'] else '' }} {{ 'todo-overdue' if todo['overdue'] else '' }}">
+        <label class="todo-main">
+          <input type="checkbox" class="js-todo-toggle" data-url="{{ url_for('main.toggle_todo', todo_id=todo['id']) }}"
+                 {{ 'checked' if todo['done'] else '' }}>
+          <span class="todo-content">{{ todo['content'] }}</span>
+        </label>
+        <div class="todo-meta">
+          <span class="todo-assignee">{{ '负责人：' + todo['assignee'] if todo['assignee'] else '负责人未指定' }}</span>
+          <span class="todo-due {{ 'text-danger' if todo['overdue'] else '' }}">
+            {{ '截止：' + todo['due_date'] if todo['due_date'] else '无截止日期' }}
+          </span>
+          {% if todo['overdue'] %}<span class="badge badge-danger">已逾期</span>{% endif %}
+          {% if todo['done'] %}<span class="badge badge-ok">已完成</span>{% endif %}
+
+          <details class="inline-edit">
+            <summary>编辑</summary>
+            <form method="post" action="{{ url_for('main.edit_todo', todo_id=todo['id']) }}" class="edit-form">
+              <label>事项<input type="text" name="content" value="{{ todo['content'] }}" required maxlength="300"></label>
+              <label>负责人<input type="text" name="assignee" value="{{ todo['assignee'] }}" maxlength="50"></label>
+              <label>截止日期<input type="date" name="due_date" value="{{ todo['due_date'] }}"></label>
+              <button class="btn btn-sm btn-primary" type="submit">保存</button>
+            </form>
+          </details>
+          <form method="post" action="{{ url_for('main.delete_todo', todo_id=todo['id']) }}"
+                class="inline-form" data-confirm="确定删除这条待办？">
+            <button class="btn btn-sm btn-danger-ghost" type="submit">删除</button>
+          </form>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="muted">暂无待办。AI 提炼后会自动生成，也可以请会议负责人补充。</p>
+  {% endif %}
+</section>
+
+{% if meeting['transcript'] %}
+<section class="card">
+  <details class="transcript">
+    <summary>会议记录原文（{{ meeting['transcript']|length }} 字）</summary>
+    <pre>{{ meeting['transcript'] }}</pre>
+  </details>
+</section>
+{% endif %}
+{% endblock %}

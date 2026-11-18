@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}会议列表 · 会记{% endblock %}
+
+{% block content %}
+<section class="page-head">
+  <div>
+    <h1>会议列表</h1>
+    <p class="muted">录入会议记录，让 AI 帮你提炼摘要、决议和待办。</p>
+  </div>
+  <a class="btn btn-primary" href="{{ url_for('main.new_meeting') }}">＋ 新建会议</a>
+</section>
+
+<section class="stats-grid">
+  <div class="stat-card">
+    <span class="stat-label">会议总数</span>
+    <strong class="stat-value">{{ stats.meetings }}</strong>
+  </div>
+  <div class="stat-card">
+    <span class="stat-label">未完成待办</span>
+    <strong class="stat-value">{{ stats.open_todos }}</strong>
+  </div>
+  <div class="stat-card">
+    <span class="stat-label">已完成待办</span>
+    <strong class="stat-value">{{ stats.done_todos }}</strong>
+  </div>
+  <div class="stat-card {{ 'stat-danger' if stats.overdue else '' }}">
+    <span class="stat-label">逾期待办</span>
+    <strong class="stat-value">{{ stats.overdue }}</strong>
+  </div>
+</section>
+
+<form class="search-bar" method="get" action="{{ url_for('main.index') }}">
+  <input type="search" name="q" value="{{ q }}" placeholder="搜索会议主题、参会人或记录内容…">
+  <button class="btn" type="submit">搜索</button>
+  {% if q %}<a class="btn btn-ghost" href="{{ url_for('main.index') }}">清除</a>{% endif %}
+</form>
+
+{% if meetings %}
+<div class="table-wrap">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>会议主题</th>
+        <th>日期</th>
+        <th>参会人</th>
+        <th>状态</th>
+        <th>未完成待办</th>
+        <th class="col-action"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for meeting in meetings %}
+      <tr>
+        <td>
+          <a class="title-link" href="{{ url_for('main.meeting_detail', meeting_id=meeting['id']) }}">
+            {{ meeting['title'] }}
+          </a>
+          {% if meeting['location'] %}<div class="subtext">{{ meeting['location'] }}</div>{% endif %}
+        </td>
+        <td class="nowrap">{{ meeting['meeting_date'] }}</td>
+        <td class="muted">{{ meeting['attendees'] or '—' }}</td>
+        <td>
+          {% if meeting['status'] == 'processed' %}
+            <span class="badge badge-ai">已提炼</span>
+          {% else %}
+            <span class="badge">草稿</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if meeting['pending_todos'] %}
+            <span class="badge badge-warn">{{ meeting['pending_todos'] }} 项</span>
+          {% else %}
+            <span class="muted">0</span>
+          {% endif %}
+        </td>
+        <td class="col-action">
+          <a class="btn btn-sm" href="{{ url_for('main.meeting_detail', meeting_id=meeting['id']) }}">查看</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="empty-state">
+  {% if q %}
+    <h2>没有匹配的会议</h2>
+    <p>换个关键词试试，或<a href="{{ url_for('main.index') }}">查看全部会议</a>。</p>
+  {% else %}
+    <h2>还没有会议记录</h2>
+    <p>创建第一场会议，粘贴记录后让 AI 生成纪要。</p>
+    <a class="btn btn-primary" href="{{ url_for('main.new_meeting') }}">＋ 新建会议</a>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}
