@@ -79,6 +79,8 @@ h2 { font-size: 17px; }
 }
 .nav > a:hover { color: var(--text); background: #f3f4f6; }
 .nav > a.active { color: var(--primary); background: var(--primary-soft); }
+.nav > a.btn-primary { color: #fff; background: var(--primary); border-color: var(--primary); }
+.nav > a.btn-primary:hover { color: #fff; background: var(--primary-dark); border-color: var(--primary-dark); }
 .nav .btn { margin-left: 6px; }
 
 .page { padding: 32px 0 64px; }
