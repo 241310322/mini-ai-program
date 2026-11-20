@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import re
 import sys
+from datetime import datetime
 from pathlib import Path
 
 from docx import Document
@@ -213,11 +214,6 @@ def setup_document() -> Document:
     run = footer.add_run(" 页")
     set_run_font(run, BODY_FONT, 9, color=MUTED)
 
-    # 打开时自动更新目录
-    settings = doc.settings.element
-    update = OxmlElement("w:updateFields")
-    update.set(qn("w:val"), "true")
-    settings.append(update)
     return doc
 
 
@@ -299,10 +295,7 @@ def add_toc(doc):
     run = paragraph.add_run("目　录")
     set_run_font(run, HEADING_FONT, 18, bold=True)
     paragraph = doc.add_paragraph()
-    add_field(paragraph, 'TOC \\o "1-3" \\h \\z \\u', "请在 Word 中右键选择「更新域」生成目录")
-    note = doc.add_paragraph()
-    run = note.add_run("提示：如目录未自动生成，请全选后按 F9，或右键目录选择「更新域」。")
-    set_run_font(run, BODY_FONT, 9, color=MUTED)
+    add_field(paragraph, 'TOC \\o "1-3" \\h \\z \\u', "")
     doc.add_page_break()
 
 
@@ -437,8 +430,13 @@ def convert(md_path: Path, docx_path: Path):
         paragraph.paragraph_format.first_line_indent = Pt(22)
         add_inline(paragraph, text)
 
+    author = (metadata.get("姓名") or "").strip("_ ").strip() or "241310322"
+    now = datetime.now()
     doc.core_properties.title = title
-    doc.core_properties.author = metadata.get("姓名") or "241310322"
+    doc.core_properties.author = author
+    doc.core_properties.last_modified_by = author
+    doc.core_properties.created = now
+    doc.core_properties.modified = now
     doc.core_properties.comments = "由脚本从 Markdown 生成"
     doc.save(docx_path)
     return docx_path
